@@ -18,7 +18,7 @@ class DoubanSpider(Spider):
     def start_requests(self):
         """重写start_requests方法，返回多个请求"""
         base_url = 'https://movie.douban.com/top250?start='
-        for i in range(0, 250, 25):    # 逐个返回第1-10页的请求对象
+        for i in range(0, 50, 25):    # 逐个返回第1-10页的请求对象
             url = base_url + str(i)
             yield Request(url, headers=self.headers)
 
