@@ -2,12 +2,8 @@ from scrapy_simple.core.spider import Spider
 from scrapy_simple.http.request import Request
 
 
-class BaiduSpider(Spider):
-
-    start_urls = ['http://www.baidu.com']    # 设置初始请求url
-
-
 class DoubanSpider(Spider):
+    name = 'douban'
 
     headers = {
         'User-Agent': (

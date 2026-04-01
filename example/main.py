@@ -1,12 +1,11 @@
-from example.spiders import BaiduSpider, DoubanSpider
+from example.spiders.baidu import BaiduSpider
+from example.spiders.douban import DoubanSpider
 from scrapy_simple.core.engine import Engine
 
 
 if __name__ == '__main__':
-    spider = BaiduSpider()  # 实例化爬虫对象
-    engine = Engine(spider)  # 传入爬虫对象
-    engine.start()  # 启动引擎
-
+    baidu_spider = BaiduSpider()
     douban_spider = DoubanSpider()
-    douban_engine = Engine(douban_spider)
-    douban_engine.start()
+    spiders = {BaiduSpider.name: baidu_spider, DoubanSpider.name: douban_spider}
+    engine = Engine(spiders)
+    engine.start()
