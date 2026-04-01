@@ -8,15 +8,22 @@ class Scheduler(object):
     """
     def __init__(self):
         self.queue = Queue()
+        # 记录总共的请求数
+        self.total_request_number = 0
 
     def add_request(self, request):
         """添加请求对象"""
         self.queue.put(request)
+        self.total_request_number += 1    # 统计请求总数
 
     def get_request(self):
         """获取一个请求对象并返回"""
-        request = self.queue.get()
-        return request
+        try:
+            request = self.queue.get(False)
+        except:
+            return None
+        else:
+            return request
 
     def _filter_request(self):
         """请求去重"""
