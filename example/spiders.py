@@ -1,6 +1,5 @@
 from scrapy_simple.core.spider import Spider
 from scrapy_simple.http.request import Request
-from scrapy_simple.item import Item
 
 
 class BaiduSpider(Spider):
@@ -29,26 +28,20 @@ class DoubanSpider(Spider):
 
     def parse(self, response):
         """解析豆瓣电影top250列表页"""
-        movie_list = []
         for li in response.xpath("//ol[@class='grid_view']/li"):
-            title_nodes = li.xpath(".//div[@class='hd']//span[@class='title'][1]/text()")
-            rating_nodes = li.xpath(".//span[@class='rating_num']/text()")
-            quote_nodes = li.xpath(".//p[@class='quote']/span/text()")
+            # title_nodes = li.xpath(".//div[@class='hd']//span[@class='title'][1]/text()")
+            # rating_nodes = li.xpath(".//span[@class='rating_num']/text()")
+            # quote_nodes = li.xpath(".//p[@class='quote']/span/text()")
             link_nodes = li.xpath(".//div[@class='hd']/a/@href")
             info_nodes = li.xpath(".//div[@class='bd']/p[1]//text()")
+            # info = ' '.join(
+            #     text.replace('\xa0', ' ').strip()
+            #     for text in info_nodes
+            #     if text.strip()
+            # )
+            yield Request(link_nodes[0].strip(), parse="parse_detail")  # 发起详情页的请求，并指定解析函数是parse_detail方法
 
-            info = ' '.join(
-                text.replace('\xa0', ' ').strip()
-                for text in info_nodes
-                if text.strip()
-            )
-
-            movie_list.append({
-                'title': title_nodes[0].strip() if title_nodes else '',
-                'rating': rating_nodes[0].strip() if rating_nodes else '',
-                'quote': quote_nodes[0].strip() if quote_nodes else '',
-                'url': link_nodes[0].strip() if link_nodes else '',
-                'info': info,
-            })
-
-        yield Item(movie_list)
+    def parse_detail(self, response):
+        """解析详情页"""
+        print('详情页url：', response.url)    # 打印一下响应的url
+        return []    # 由于必须返回一个容器，这里返回一个空列表
