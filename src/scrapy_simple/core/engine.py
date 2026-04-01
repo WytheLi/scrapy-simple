@@ -1,6 +1,9 @@
+from datetime import datetime
+
 from scrapy_simple.middlewares.downloader_middleware import DownloaderMiddleware
 from scrapy_simple.middlewares.spider_middleware import SpiderMiddleware
 from scrapy_simple.http.request import Request
+from scrapy_simple.utils.logger import logger, configure_logging
 
 from .scheduler import Scheduler
 from .downloader import Downloader
@@ -21,10 +24,14 @@ class Engine(object):
         self.pipeline = Pipeline()    # 初始化管道对象
         self.spider_mid = SpiderMiddleware()    # 初始化爬虫中间件对象
         self.downloader_mid = DownloaderMiddleware()    # 初始化下载器中间件对象
+        configure_logging()
 
     def start(self):
         """启动整个引擎"""
+        start_time = datetime.now()
         self._start_engine()
+        stop_time = datetime.now()
+        logger.info("耗时：%.2f" % (stop_time - start_time).total_seconds())
 
     def _start_engine(self):
         """依次调用其他组件对外提供的接口，实现整个框架的运作(驱动)"""
