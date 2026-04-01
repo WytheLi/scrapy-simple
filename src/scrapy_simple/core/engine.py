@@ -1,14 +1,13 @@
+import importlib
 import time
 from datetime import datetime
 
-from scrapy_simple.middlewares.downloader_middleware import DownloaderMiddleware
-from scrapy_simple.middlewares.spider_middleware import SpiderMiddleware
 from scrapy_simple.http.request import Request
 from scrapy_simple.utils.logger import logger, configure_logging
+from scrapy_simple.conf.settings import SPIDER_CLASSES, PIPELINE_CLASSES, SPIDER_MIDDLEWARES, DOWNLOADER_MIDDLEWARES
 
 from .scheduler import Scheduler
 from .downloader import Downloader
-from .pipeline import Pipeline
 
 
 class Engine(object):
@@ -17,17 +16,40 @@ class Engine(object):
     b. 依次调用其他组件对外提供的接口，实现整个框架的运作(驱动)
     """
 
-    def __init__(self, spiders, pipelines=[], spider_mids=[], downloader_mids=[]):
-        self.spiders = spiders
+    def __init__(self):
+        self.spiders = self._auto_import_instances(SPIDER_CLASSES, is_spider=True)
         self.scheduler = Scheduler()    # 初始化调度器对象
         self.downloader = Downloader()    # 初始化下载器对象
-        self.pipelines = pipelines
-        self.spider_mids = spider_mids
-        self.downloader_mids = downloader_mids
+        self.pipelines = self._auto_import_instances(PIPELINE_CLASSES)
+        self.spider_mids = self._auto_import_instances(SPIDER_MIDDLEWARES)
+        self.downloader_mids = self._auto_import_instances(DOWNLOADER_MIDDLEWARES)
         configure_logging()
         self.total_request_nums = 0
         self.total_response_nums = 0
 
+    def _auto_import_instances(self, path=[], is_spider=False):
+      """
+      通过配置文件，动态导入类并实例化
+      :param path: 表示配置文件中配置的导入类的路径
+      :param is_spider: 由于爬虫需要返回的是一个字典，因此对其做对应的判断和处理
+      :return:
+      """
+      # 该方法不仅实例化动态导入爬虫，还有管道和中间件，而前者返回应是字典类型
+      if is_spider is True:
+          instances = {}
+      else:
+          instances = []    # 存储对应类的实例对象
+
+      for p in path:
+          module_name = p.rsplit(".",1)[0]    # 取出模块名称
+          cls_name = p.rsplit(".",1)[1]    # 取出类名称
+          ret = importlib.import_module(module_name)    # 动态导入爬虫模块
+          cls = getattr(ret, cls_name)    # 根据类名称获取类对象
+          if is_spider is True:
+              instances[cls.name] = cls()
+          else:
+              instances.append(cls())    # 实例化类对象
+      return instances    # 返回类对象
 
     def start(self):
         """启动整个引擎"""
