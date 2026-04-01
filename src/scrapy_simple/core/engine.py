@@ -17,13 +17,13 @@ class Engine(object):
     b. 依次调用其他组件对外提供的接口，实现整个框架的运作(驱动)
     """
 
-    def __init__(self, spiders, pipelines=[]):
+    def __init__(self, spiders, pipelines=[], spider_mids=[], downloader_mids=[]):
         self.spiders = spiders
         self.scheduler = Scheduler()    # 初始化调度器对象
         self.downloader = Downloader()    # 初始化下载器对象
         self.pipelines = pipelines
-        self.spider_mid = SpiderMiddleware()    # 初始化爬虫中间件对象
-        self.downloader_mid = DownloaderMiddleware()    # 初始化下载器中间件对象
+        self.spider_mids = spider_mids
+        self.downloader_mids = downloader_mids
         configure_logging()
         self.total_request_nums = 0
         self.total_response_nums = 0
@@ -45,7 +45,8 @@ class Engine(object):
             for start_request in spider.start_requests():
                 # 2. 把初始请求添加给调度器
                 # 利用爬虫中间件预处理请求对象
-                start_request = self.spider_mid.process_request(start_request)
+                for spider_mid in self.spider_mids:
+                    start_request = spider_mid.process_request(start_request)
                 start_request.spider_name = spider_name    #为请求对象绑定它所属的爬虫的名称
                 self.scheduler.add_request(start_request)
                 #请求数+1
@@ -57,8 +58,9 @@ class Engine(object):
         if request is None: #如果没有获取到请求对象，直接返回
             return
 
-            # request对象经过下载器中间件的process_request进行处理
-        request = self.downloader_mid.process_request(request)
+        # request对象经过下载器中间件的process_request进行处理
+        for downloader_mid in self.downloader_mids:
+            request = downloader_mid.process_request(request)
 
         # 4. 调用下载器的get_response方法，获取响应
         response = self.downloader.get_response(request)
@@ -66,9 +68,11 @@ class Engine(object):
         response.meta = request.meta
 
         # response对象经过下载器中间件的process_response进行处理
-        response = self.downloader_mid.process_response(response)
+        for downloader_mid in self.downloader_mids:
+            response = downloader_mid.process_response(response)
         # response对象经过下爬虫中间件的process_response进行处理
-        response = self.spider_mid.process_response(response)
+        for spider_mid in self.spider_mids:
+            response = spider_mid.process_response(response)
 
         spider = self.spiders[request.spider_name]
 
@@ -80,7 +84,8 @@ class Engine(object):
             # 6.1 如果是请求对象，那么就再交给调度器
             if isinstance(result, Request):
                # 利用爬虫中间件预处理请求对象
-               result = self.spider_mid.process_request(result)
+               for spider_mid in self.spider_mids:
+                   result = spider_mid.process_request(result)
                result.spider_name = request.spider_name  # 为请求对象绑定它所属的爬虫的名称
                self.scheduler.add_request(result)
                self.total_request_nums += 1
